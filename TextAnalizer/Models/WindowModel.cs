@@ -53,7 +53,6 @@ namespace TextAnalizer.Models
                 OnPropertyChanged("PRButtonName");
                 OnPropertyChanged("SSButtonName");
                 OnPropertyChanged("TextEnable");
-                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -112,11 +111,12 @@ namespace TextAnalizer.Models
                 pause.Reset();
                 State = AnalizeState.Paused;
             }
-            else
+            else if (State == AnalizeState.Paused)
             {
                 pause.Set();
                 State = AnalizeState.Started;
             }
+            else Application.Current.Shutdown();
         }
 
         public bool TextEnable => State == AnalizeState.Idle;
@@ -130,6 +130,7 @@ namespace TextAnalizer.Models
                 if (wordsCountCheck) WordsCountVisibility = Visibility.Visible;
                 else WordsCountVisibility = Visibility.Collapsed;
                 OnPropertyChanged("WordsCountVisibility");
+                resetResult();
             }
         }
         public bool SentencesCountCheck
@@ -141,6 +142,7 @@ namespace TextAnalizer.Models
                 if (sentencesCountCheck) SentencesCountVisibility = Visibility.Visible;
                 else SentencesCountVisibility = Visibility.Collapsed;
                 OnPropertyChanged("SentencesCountVisibility");
+                resetResult();
             }
         }
         public bool SymbolsCountCheck
@@ -152,6 +154,7 @@ namespace TextAnalizer.Models
                 if (symbolsCountCheck) SymbolsCountVisibility = Visibility.Visible;
                 else SymbolsCountVisibility = Visibility.Collapsed;
                 OnPropertyChanged("SymbolsCountVisibility");
+                resetResult();
             }
         }
         public bool QSentencesCountCheck
@@ -163,6 +166,7 @@ namespace TextAnalizer.Models
                 if (qSentencesCountCheck) QSentencesCountVisibility = Visibility.Visible;
                 else QSentencesCountVisibility = Visibility.Collapsed;
                 OnPropertyChanged("QSentencesCountVisibility");
+                resetResult();
             }
         }
         public bool ExSentencesCountCheck
@@ -174,6 +178,7 @@ namespace TextAnalizer.Models
                 if (exSentencesCountCheck) ExSentencesCountVisibility = Visibility.Visible;
                 else ExSentencesCountVisibility = Visibility.Collapsed;
                 OnPropertyChanged("ExSentencesCountVisibility");
+                resetResult();
             }
         }
         public bool FileOutputCheck
@@ -244,7 +249,7 @@ namespace TextAnalizer.Models
         }
 
         public string SSButtonName => state == AnalizeState.Idle ? "Start" :"Stop";
-        public string PRButtonName => state == AnalizeState.Paused ? "Resume" : "Pause";
+        public string PRButtonName => state == AnalizeState.Paused ? "Resume" : state == AnalizeState.Started ? "Pause" : "Exit";
      
 
         public Visibility WordsCountVisibility { get; set; }
@@ -314,7 +319,7 @@ namespace TextAnalizer.Models
 
 
         public RelayCommand StartStop => new((o) => { startStop(); },(o)=> !string.IsNullOrEmpty(Text) && (WordsCountCheck || SentencesCountCheck || SymbolsCountCheck || QSentencesCountCheck || ExSentencesCountCheck) );
-        public RelayCommand PauseResume => new((o) => { pauseResume(); }, (o) => state != AnalizeState.Idle);
+        public RelayCommand PauseResume => new((o) => { pauseResume(); });
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public void OnPropertyChanged([CallerMemberName] string prop = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
