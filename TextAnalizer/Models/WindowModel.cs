@@ -106,17 +106,20 @@ namespace TextAnalizer.Models
         }
         private void pauseResume()
         {
-            if (State == AnalizeState.Started)
+            switch (State)
             {
-                pause.Reset();
-                State = AnalizeState.Paused;
+                case AnalizeState.Started:
+                    pause.Reset();
+                    State = AnalizeState.Paused;
+                    break; 
+                case AnalizeState.Paused:
+                    pause.Set();
+                    State = AnalizeState.Started;
+                    break;
+                default:
+                    Application.Current.Shutdown();
+                    break;
             }
-            else if (State == AnalizeState.Paused)
-            {
-                pause.Set();
-                State = AnalizeState.Started;
-            }
-            else Application.Current.Shutdown();
         }
 
         public bool TextEnable => State == AnalizeState.Idle;
@@ -248,8 +251,8 @@ namespace TextAnalizer.Models
             }
         }
 
-        public string SSButtonName => state == AnalizeState.Idle ? "Start" :"Stop";
-        public string PRButtonName => state == AnalizeState.Paused ? "Resume" : state == AnalizeState.Started ? "Pause" : "Exit";
+        public string SSButtonName => state == AnalizeState.Idle ? "Старт" :"Стоп";
+        public string PRButtonName => state == AnalizeState.Paused ? "Продовжити" : state == AnalizeState.Started ? "Пауза" : "Вихід";
      
 
         public Visibility WordsCountVisibility { get; set; }
@@ -265,7 +268,7 @@ namespace TextAnalizer.Models
             tasks = new();
             actions = new Action[5] 
             {
-                new(()=>
+                new(()=>   //Words count
                 {
                     int wordsCount = 0;
                     bool wordStart = false;
@@ -284,13 +287,13 @@ namespace TextAnalizer.Models
                     if (wordStart) wordsCount++;
                     Application.Current.Dispatcher.Invoke( new Action(()=> WordsCount = wordsCount  ));
                 }),
-                new(()=>
+                new(()=>   //Sentences count
                 {
                     int sentencesCount = charCount(Text,'.');
                     if(sentencesCount == -1) return;
                     Application.Current.Dispatcher.Invoke( new Action(()=> SentencesCount = sentencesCount  ));
                 }),
-                new(()=>
+                new(()=> //Symbols count
                 {
                     int symbolsCount = 0;
                     foreach (var ch in Text)
@@ -302,13 +305,13 @@ namespace TextAnalizer.Models
                     }
                      Application.Current.Dispatcher.Invoke( new Action(()=> SymbolsCount = symbolsCount  ));
                 }),
-                new(()=>
+                new(()=> //Interrogative sentences count
                 { 
                     int qSentencesCount = charCount(Text,'?');
                      if(qSentencesCount == -1) return;
                     Application.Current.Dispatcher.Invoke( new Action(()=> QSentencesCount = qSentencesCount  ));
                 }),
-                new(()=>
+                new(()=> //Exclamatory sentences count
                 {
                     int exSentencesCount = charCount(Text,'!');
                     if(exSentencesCount == -1) return;
