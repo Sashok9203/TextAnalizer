@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -32,11 +34,13 @@ namespace TextAnalizer.Models
         private bool symbolsCountCheck = true;
         private bool qSentencesCountCheck = true;
         private bool exSentencesCountCheck = true;
-        private bool fileOutputCheck = false;
+        private bool fileOutputCheck;
         private string? text = null;
+        private string? path = null;
         private CancellationTokenSource tokenSource;
         private CancellationToken token;
         private ManualResetEvent pause;
+        private Barrier barrier;
 
         private List<Task> tasks;
         private Action[] actions;
@@ -65,23 +69,36 @@ namespace TextAnalizer.Models
             ExSentencesCount = null;
         }
 
-        private async void startStop()
+        private void analizeFinish(Barrier barrier)
+        {
+            if (FileOutputCheck)
+            {
+                using StreamWriter sw = new(FilePath);
+                sw.WriteLine("Результат аналізу файла:");
+                if (WordsCountCheck) sw.WriteLine($"Kількість слів - {WordsCount}");
+                if (SentencesCountCheck) sw.WriteLine($"Kількість речень - {SentencesCount}");
+                if (SymbolsCountCheck) sw.WriteLine($"Kількість символів - {SymbolsCount}");
+                if (QSentencesCountCheck) sw.WriteLine($"Kількість питальних речень - {QSentencesCount}");
+                if (ExSentencesCountCheck) sw.WriteLine($"Kількість окличних речень - {ExSentencesCount}");
+                MessageBox.Show($"Результат наналізу записано у файл  - {FilePath}","Analize result");
+            }
+            State = AnalizeState.Idle;
+        }
+
+        private void startStop()
         {
             if (State == AnalizeState.Idle)
             {
                 tokenSource = new();
                 token = tokenSource.Token;
+                if(barrier.ParticipantCount>0) barrier.RemoveParticipants(barrier.ParticipantCount);
                 resetResult();
                 State = AnalizeState.Started;
                 bool[] analizators = new bool[5] { WordsCountCheck, SentencesCountCheck, SymbolsCountCheck, QSentencesCountCheck, ExSentencesCountCheck };
                 tasks.Clear();
                 for (int i = 0; i < analizators.Length; i++)
                     if (analizators[i]) tasks.Add(Task.Factory.StartNew(actions[i]));
-
-                foreach (var item in tasks)
-                    try { await item.WaitAsync(token); } catch { }
-
-                State = AnalizeState.Idle;
+                barrier.AddParticipants(tasks.Count);
             }
             else
             {
@@ -120,6 +137,15 @@ namespace TextAnalizer.Models
                     Application.Current.Shutdown();
                     break;
             }
+        }
+        
+        private void openFolder()
+        {
+            SaveFileDialog sfd = new()
+            {
+                Filter = "txt files (*.txt)|*.txt"
+            };
+            if (sfd.ShowDialog() == true) FilePath = sfd.FileName;
         }
 
         public bool TextEnable => State == AnalizeState.Idle;
@@ -190,8 +216,17 @@ namespace TextAnalizer.Models
             set
             {
                 fileOutputCheck = value;
-                if (fileOutputCheck) StatisticVisibility = Visibility.Collapsed;
-                else StatisticVisibility = Visibility.Visible;
+                if (fileOutputCheck)
+                {
+                    FilePathVisibility = Visibility.Visible;
+                    StatisticVisibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    FilePathVisibility = Visibility.Collapsed;
+                    StatisticVisibility = Visibility.Visible;
+                }
+                OnPropertyChanged("FilePathVisibility");
                 OnPropertyChanged("StatisticVisibility");
             }
         }
@@ -250,6 +285,15 @@ namespace TextAnalizer.Models
                 OnPropertyChanged();
             }
         }
+        public string? FilePath
+        {
+            get => path;
+            set
+            {
+                path = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string SSButtonName => state == AnalizeState.Idle ? "Старт" :"Стоп";
         public string PRButtonName => state == AnalizeState.Paused ? "Продовжити" : state == AnalizeState.Started ? "Пауза" : "Вихід";
@@ -261,11 +305,14 @@ namespace TextAnalizer.Models
         public Visibility QSentencesCountVisibility { get; set; }
         public Visibility ExSentencesCountVisibility { get; set; }
         public Visibility StatisticVisibility { get; set; }
+        public Visibility FilePathVisibility { get; set; }
 
         public WindowModel()
         {
             pause = new(true);
             tasks = new();
+            FileOutputCheck = false;
+            barrier = new(0, (b) => analizeFinish(b));
             actions = new Action[5] 
             {
                 new(()=>   //Words count
@@ -286,12 +333,14 @@ namespace TextAnalizer.Models
                     }
                     if (wordStart) wordsCount++;
                     Application.Current.Dispatcher.Invoke( new Action(()=> WordsCount = wordsCount  ));
+                    barrier?.SignalAndWait();
                 }),
                 new(()=>   //Sentences count
                 {
                     int sentencesCount = charCount(Text,'.');
                     if(sentencesCount == -1) return;
                     Application.Current.Dispatcher.Invoke( new Action(()=> SentencesCount = sentencesCount  ));
+                    barrier?.SignalAndWait();
                 }),
                 new(()=> //Symbols count
                 {
@@ -304,25 +353,34 @@ namespace TextAnalizer.Models
                        Thread.Sleep(1);
                     }
                      Application.Current.Dispatcher.Invoke( new Action(()=> SymbolsCount = symbolsCount  ));
+                    barrier?.SignalAndWait();
                 }),
                 new(()=> //Interrogative sentences count
                 { 
                     int qSentencesCount = charCount(Text,'?');
                      if(qSentencesCount == -1) return;
                     Application.Current.Dispatcher.Invoke( new Action(()=> QSentencesCount = qSentencesCount  ));
+                    barrier?.SignalAndWait();
                 }),
                 new(()=> //Exclamatory sentences count
                 {
                     int exSentencesCount = charCount(Text,'!');
                     if(exSentencesCount == -1) return;
                     Application.Current.Dispatcher.Invoke( new Action(()=> ExSentencesCount = exSentencesCount  ));
+                    barrier?.SignalAndWait();
                 })
             };
         }
 
 
-        public RelayCommand StartStop => new((o) => { startStop(); },(o)=> !string.IsNullOrEmpty(Text) && (WordsCountCheck || SentencesCountCheck || SymbolsCountCheck || QSentencesCountCheck || ExSentencesCountCheck) );
+        public RelayCommand StartStop => new((o) => { startStop(); },(o)=> ((!FileOutputCheck && !string.IsNullOrEmpty(Text)) 
+                                                                                               || (!string.IsNullOrEmpty(Text) && FileOutputCheck 
+                                                                                                     && Path.Exists(Path.GetDirectoryName(FilePath)) 
+                                                                                                     && !string.IsNullOrEmpty(Path.GetFileName(FilePath))
+                                                                                                     && Path.GetExtension(FilePath) == ".txt")  
+                                                                                               && (WordsCountCheck || SentencesCountCheck || SymbolsCountCheck || QSentencesCountCheck || ExSentencesCountCheck)));
         public RelayCommand PauseResume => new((o) => { pauseResume(); });
+        public RelayCommand OpenFolder => new((o) => { openFolder(); });
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public void OnPropertyChanged([CallerMemberName] string prop = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
