@@ -55,16 +55,16 @@
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <Label Content="Слова :" Visibility="{Binding WordsCountVisibility,Mode=TwoWay}"/>
-                        <Label Content="Речення :" Grid.Row="1" Visibility="{Binding SentencesCountVisibility,Mode=TwoWay}"/>
-                        <Label Content="Символи :" Grid.Row="2" Visibility="{Binding SymbolsCountVisibility,Mode=TwoWay}"/>
-                        <Label Content="Окл.речення :" Grid.Row="3" Visibility="{Binding ExSentencesCountVisibility,Mode=TwoWay}"/>
-                        <Label Content="Пит.речення :" Grid.Row="4" Visibility="{Binding QSentencesCountVisibility,Mode=TwoWay}"/>
-                        <TextBlock Text="{Binding WordsCount}" Grid.Column="1"  VerticalAlignment="Center" Visibility="{Binding WordsCountVisibility,Mode=TwoWay}"/>
-                        <TextBlock Text="{Binding SentencesCount}" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Visibility="{Binding SentencesCountVisibility,Mode=TwoWay}"/>
-                        <TextBlock Text="{Binding SymbolsCount}" Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Visibility="{Binding SymbolsCountVisibility,Mode=TwoWay}"/>
-                        <TextBlock Text="{Binding ExSentencesCount}" Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Visibility="{Binding ExSentencesCountVisibility,Mode=TwoWay}"/>
-                        <TextBlock Text="{Binding QSentencesCount}" Grid.Column="1" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding QSentencesCountVisibility,Mode=TwoWay}"/>
+                        <Label Content="Слова :" Visibility="{Binding WordsCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <Label Content="Речення :" Grid.Row="1" Visibility="{Binding SentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <Label Content="Символи :" Grid.Row="2" Visibility="{Binding SymbolsCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <Label Content="Окл.речення :" Grid.Row="3" Visibility="{Binding ExSentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <Label Content="Пит.речення :" Grid.Row="4" Visibility="{Binding QSentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <TextBlock Text="{Binding WordsCount}" Grid.Column="1"  VerticalAlignment="Center" Visibility="{Binding WordsCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <TextBlock Text="{Binding SentencesCount}" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Visibility="{Binding SentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <TextBlock Text="{Binding SymbolsCount}" Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Visibility="{Binding SymbolsCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <TextBlock Text="{Binding ExSentencesCount}" Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Visibility="{Binding ExSentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
+                        <TextBlock Text="{Binding QSentencesCount}" Grid.Column="1" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding QSentencesCountVisibility,Mode=TwoWay}" FontWeight="DemiBold"/>
                     </Grid>
                 </StackPanel>
             </Border>
